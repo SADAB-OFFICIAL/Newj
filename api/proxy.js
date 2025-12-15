@@ -5,7 +5,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "No URL provided" });
     }
 
-    const response = await fetch(target, {
+    const r = await fetch(target, {
       headers: {
         "User-Agent":
           "Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36 Chrome/133 Mobile",
@@ -13,13 +13,13 @@ export default async function handler(req, res) {
       },
     });
 
-    const data = await response.text();
+    const text = await r.text();
 
     res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Content-Type", response.headers.get("content-type"));
+    res.setHeader("Content-Type", r.headers.get("content-type") || "application/json");
 
-    return res.status(200).send(data);
+    res.status(200).send(text);
   } catch (e) {
-    return res.status(500).json({ error: e.message });
+    res.status(500).json({ error: e.message });
   }
 }
