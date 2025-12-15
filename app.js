@@ -1,53 +1,94 @@
-const movies = [
-  {
-    title:"Jawan",
-    poster:"https://image.tmdb.org/t/p/w500/6k6X8JqzY2w0b0Yz.jpg",
-    qualities:["480p","720p","1080p"]
-  },
-  {
-    title:"Animal",
-    poster:"https://image.tmdb.org/t/p/w500/q6y0Go1tsGEsmtFryDOJo3dEmqu.jpg",
-    qualities:["720p","1080p"]
-  }
-];
+const API = "/api/proxy?url=";
+const BASE = "https://netvlyx.pages.dev";
 
-const grid = document.getElementById("movies");
+const moviesBox = document.getElementById("movies");
 const modal = document.getElementById("modal");
+const movieTitle = document.getElementById("movieTitle");
 const qualitiesBox = document.getElementById("qualities");
 const serversBox = document.getElementById("servers");
-const titleBox = document.getElementById("mTitle");
+const finalBox = document.getElementById("final");
 
-movies.forEach(m=>{
-  const c=document.createElement("div");
-  c.className="card";
-  c.innerHTML=`<img src="${m.poster}"><p>${m.title}</p>`;
-  c.onclick=()=>openMovie(m);
-  grid.appendChild(c);
+function apiFetch(url) {
+  return fetch(API + encodeURIComponent(url)).then(r => r.json());
+}
+
+function driveId(url) {
+  return url.split("/").pop();
+}
+
+/* LOAD HOME */
+apiFetch(BASE + "/api/scrape").then(data => {
+  data.movies.forEach(m => {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `<img src="${m.poster}"><p>${m.title}</p>`;
+    card.onclick = () => openMovie(m);
+    moviesBox.appendChild(card);
+  });
 });
 
-function openMovie(movie){
-  modal.classList.remove("hidden");
-  titleBox.innerText=movie.title;
-  qualitiesBox.innerHTML="<h3>Quality</h3>";
-  serversBox.innerHTML="";
-  movie.qualities.forEach(q=>{
-    let b=document.createElement("button");
-    b.innerText=q;
-    b.onclick=()=>showServers();
-    qualitiesBox.appendChild(b);
+/* OPEN MOVIE */
+function openMovie(movie) {
+  modal.classList.remove("hide");
+  movieTitle.innerText = movie.title;
+  qualitiesBox.innerHTML = "";
+  serversBox.innerHTML = "";
+  finalBox.innerHTML = "";
+
+  apiFetch(BASE + "/api/m4ulinks-scraper?url=" + movie.link).then(data => {
+    data.linkData.forEach(q => {
+      const btn = document.createElement("button");
+      btn.innerText = q.quality;
+      btn.onclick = () => showServers(q.links);
+      qualitiesBox.appendChild(btn);
+    });
   });
 }
 
-function showServers(){
-  serversBox.innerHTML="<h3>Servers</h3>";
-  ["HubCloud","GDFlix","Drive"].forEach(s=>{
-    let b=document.createElement("button");
-    b.innerText=s;
-    b.onclick=()=>alert("Connect backend here");
-    serversBox.appendChild(b);
+/* SHOW SERVERS */
+function showServers(servers) {
+  serversBox.innerHTML = "";
+  finalBox.innerHTML = "";
+
+  servers.forEach(s => {
+    const btn = document.createElement("button");
+    btn.innerText = s.name;
+    btn.onclick = () => handleServer(s);
+    serversBox.appendChild(btn);
   });
 }
 
-function closeModal(){
-  modal.classList.add("hidden");
+/* HANDLE SERVER */
+function handleServer(server) {
+  if (server.name.toLowerCase() === "download links") {
+    apiFetch(BASE + "/api/nextdrive-scraper?link=" + server.url).then(d => {
+      serversBox.innerHTML = "";
+      d.movie.servers.forEach(r => {
+        const btn = document.createElement("button");
+        btn.innerText = r.name;
+        btn.onclick = () => resolveFinal(r.url);
+        serversBox.appendChild(btn);
+      });
+    });
+  } else {
+    resolveFinal(server.url);
+  }
+}
+
+/* FINAL LINKS */
+function resolveFinal(url) {
+  finalBox.innerHTML = "";
+  apiFetch(BASE + "/api/nextdrive-scraper?driveid=" + driveId(url)).then(d => {
+    d.movie.servers.forEach(f => {
+      const a = document.createElement("a");
+      a.href = f.url;
+      a.target = "_blank";
+      a.innerText = f.url;
+      finalBox.appendChild(a);
+    });
+  });
+}
+
+function closeModal() {
+  modal.classList.add("hide");
 }
