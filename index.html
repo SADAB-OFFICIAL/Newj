@@ -1,115 +1,31 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Netvlyx Vercel Proxy</title>
-<style>
-body{background:#111;color:#fff;font-family:Arial}
-button{margin:5px;padding:6px}
-a{color:#4ea1ff;word-break:break-all}
-</style>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Netvlyx</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<h2>🔥 Netvlyx (Vercel Proxy)</h2>
+<header>
+  <h1>NETVLYX</h1>
+</header>
 
-<div id="movies"></div>
-<div id="qualities"></div>
-<div id="servers"></div>
-<div id="final"></div>
+<main id="movies"></main>
 
-<script>
-const PROXY = "/api/proxy?url=";
-const BASE  = "https://netvlyx.pages.dev";
+<!-- MODAL -->
+<div id="modal" class="hidden">
+  <div class="modal-box">
+    <h2 id="mTitle"></h2>
 
-const movies = document.getElementById("movies");
-const qualities = document.getElementById("qualities");
-const servers = document.getElementById("servers");
-const finalBox = document.getElementById("final");
+    <div id="qualities"></div>
+    <div id="servers"></div>
 
-function clearAll() {
-  qualities.innerHTML = "";
-  servers.innerHTML = "";
-  finalBox.innerHTML = "";
-}
+    <button onclick="closeModal()">Close</button>
+  </div>
+</div>
 
-function fetchProxy(url) {
-  return fetch(PROXY + encodeURIComponent(url)).then(r => r.json());
-}
-
-function driveId(url) {
-  return url.split("/").pop();
-}
-
-/* HOME */
-fetchProxy(BASE + "/api/scrape").then(d => {
-  d.movies.forEach(m => {
-    let b = document.createElement("button");
-    b.textContent = m.title;
-    b.onclick = () => loadMovie(m);
-    movies.appendChild(b);
-  });
-});
-
-/* MOVIE */
-function loadMovie(movie) {
-  clearAll();
-  fetchProxy(BASE + "/api/m4ulinks-scraper?url=" + encodeURIComponent(movie.link))
-  .then(d => {
-    d.linkData.forEach(q => {
-      let b = document.createElement("button");
-      b.textContent = q.quality;
-      b.onclick = () => showServers(q.links);
-      qualities.appendChild(b);
-    });
-  });
-}
-
-/* SERVERS */
-function showServers(list) {
-  servers.innerHTML = "";
-  list.forEach(s => {
-    let b = document.createElement("button");
-    b.textContent = s.name;
-    b.onclick = () => handleServer(s);
-    servers.appendChild(b);
-  });
-}
-
-/* SERVER FLOW */
-function handleServer(s) {
-  if (s.name.toLowerCase() === "download links") {
-    fetchProxy(BASE + "/api/nextdrive-scraper?link=" + encodeURIComponent(s.url))
-    .then(d => {
-      servers.innerHTML = "";
-      d.movie.servers.forEach(r => {
-        let b = document.createElement("button");
-        b.textContent = r.name;
-        b.onclick = () => resolveFinal(r.url);
-        servers.appendChild(b);
-      });
-    });
-  } else {
-    resolveFinal(s.url);
-  }
-}
-
-/* FINAL */
-function resolveFinal(url) {
-  finalBox.innerHTML = "<h3>Final Links</h3>";
-  fetchProxy(BASE + "/api/nextdrive-scraper?driveid=" + driveId(url))
-  .then(d => {
-    d.movie.servers.forEach(f => {
-      let a = document.createElement("a");
-      a.href = f.url;
-      a.textContent = f.url;
-      a.target = "_blank";
-      finalBox.appendChild(a);
-      finalBox.appendChild(document.createElement("br"));
-    });
-  });
-}
-</script>
-
+<script src="app.js"></script>
 </body>
 </html>
